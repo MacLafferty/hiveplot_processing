@@ -2,10 +2,17 @@
 import sys
 import numpy as np
 import re
-import bipartition
-import community
 import copy
 
+class bipartition:
+	def __init__(self,name,code,freq):
+		self.name,self.code,self.freq=name,code,freq
+		
+class community:
+	def __init__(self):
+		self.bipartitionDictionary={}
+
+print "script started"
 #command line arguments
 # first file is community file
 #second file is covariance matrix
@@ -25,19 +32,14 @@ floaters=[]
 
 isTaxa=False
 #regular expression strings to pull out necessary info
-#semicolon necessary in taxonsearch since sometimes last taxon has one
-taxSearch="(\w+) , (\d+)"
-#taxSearch="(t\d+s\d+)\;* , (\d+)"
+taxSearch="(t\d+s\d+)\;* , (\d+)"
 bipartSearch="bipartition (\d+) : (\d+), appear times: (\d+)"
 communitySearch="Community (\d+) includes nodes: ((\d+,)+)"
 
 #skips all the crap in the file prior to the taxa listed; sets up for next loop and taxon info
-count=0
 while isTaxa==False:
 	line=infile.readline()
-	count+=1
-	if count > 100:
-		break
+	print "taxaSearch:",line
 	regex=re.search(taxSearch,line)
 	if regex == None:
 		pass
@@ -106,8 +108,6 @@ while isCommunity:
 		isCommunity = False
 		print "isCommunity done"
 
-print communityDict
-
 #string containing floating bipartitions
 line=infile.readline()
 #get rid of annoying spaces
@@ -131,13 +131,15 @@ bigCommTwo=	-1
 #all i's are +1 due to stupid indexing
 for i in range(len(communityDict)):
 
-	if len(communityDict[i].bipartitionDictionary) >= commOneSize:
+	if len(communityDict[i+1].bipartitionDictionary) >= commOneSize:
 		#set second largest from current largest
 		commTwoSize=commOneSize
 		commTwoIndex=commOneIndex
 		#reassign largest community value
-		commOneSize=len(communityDict[i].bipartitionDictionary)
+		commOneSize=len(communityDict[i+1].bipartitionDictionary)
 		commOneIndex=i+1
+		
+
 
 #read in pairwise-covariance matrix
 infile=open(filenameTwo,'r')
@@ -179,13 +181,13 @@ outfile=open("Jhive_bipart.dot",'w')
 for i in range(len(bipartDict)):
 	#if the community is found in a community, that will effect the variable used to sort by axis
 	if i in communityDict[commOneIndex].bipartitionDictionary.keys():
-		outfile.write(bipartDict[i].name + "[ name=" + bipartDict[i].name +" frequency="+str(bipartDict[i].freq)+ " axis=1]\n")
+		outfile.write(bipartDict[i+1].name + "[ name=" + bipartDict[i+1].name +" frequency="+str(bipartDict[i+1].freq)+ " axis=1]\n")
 	elif i in communityDict[commTwoIndex].bipartitionDictionary.keys():
-		outfile.write(bipartDict[i].name + "[ name=" + bipartDict[i].name +" frequency="+str(bipartDict[i].freq)+ " axis=2]\n")
+		outfile.write(bipartDict[i+1].name + "[ name=" + bipartDict[i+1].name +" frequency="+str(bipartDict[i+1].freq)+ " axis=2]\n")
 	elif str(i) in floaters:
-		outfile.write(bipartDict[i].name + "[ name=" + bipartDict[i].name +" frequency="+str(bipartDict[i].freq)+ " axis=3]\n")
+		outfile.write(bipartDict[i+1].name + "[ name=" + bipartDict[i+1].name +" frequency="+str(bipartDict[i+1].freq)+ " axis=3]\n")
 	else:
-		outfile.write(bipartDict[i].name + "[ name=" + bipartDict[i].name +" frequency="+str(bipartDict[i].freq)+ " axis=0]\n")
+		outfile.write(bipartDict[i+1].name + "[ name=" + bipartDict[i+1].name +" frequency="+str(bipartDict[i+1].freq)+ " axis=0]\n")
 #now that nodes and edges are in memory, start writing stuff!
 #write nodes to file, changing axis assignment variable based on whether node belongs to largest communities
 covarMax=0
@@ -195,7 +197,7 @@ for x in range(len(bipartDict)-1):
 		for z in range(x+1,len(bipartDict)-1):
 			#the +1 is necessary since communities aren't 0 indexed
 			if bluePill[y,z] != 0:
-				outfile.write(bipartDict[y].name + "--" + bipartDict[z+1].name + "[covar="+str(bluePill[y,z])+ "]\n")
+				outfile.write(bipartDict[y+1].name + "--" + bipartDict[z+1].name + "[covar="+str(bluePill[y,z])+ "]\n")
 				#check matrix value, find maximum absolute covariance value
 				if abs(bluePill[y,z]) > covarMax:
 					covarMax=abs(bluePill[y,z])
